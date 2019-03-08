@@ -1,6 +1,3 @@
-// Released under GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007, see the LICENSE file.
-// Copyright (C) 2018 Daniel Rutschmann aka. dacin21
-
 #ifndef ADAPTIVE_INT_HPP
 #define ADAPTIVE_INT_HPP
 
@@ -12,7 +9,12 @@ namespace dacin::geom{
 template<size_t n>
 class Adaptive_Int{
 public:
-    using backend_t = conditional_t< n <= 31, int32_t, conditional_t<n <= 63, int64_t, Bigint_Fixedsize_Signed<std::max<size_t>(1, (n+1)/32)> > >;
+    using backend_t = conditional_t< n <= 31, int32_t, conditional_t<n <= 63, int64_t, Bigint_Fixedsize_Signed<std::max<size_t>(1, n/32+1)> > >;
+
+    template<typename T>
+    struct is_adaptive_int : std::false_type{};
+    template<size_t m>
+    struct is_adaptive_int<Adaptive_Int<m> > : std::true_type{};
 
     template<typename T, typename S>
     struct has_sign : std::false_type{};
@@ -62,6 +64,7 @@ public:
     }
     template<size_t m>
     Adaptive_Int& operator-=(Unsafe_Wrapper<Adaptive_Int<m> const&> o) {
+        static_assert(m <= n);
         value-= o().get_cvalue();
         return *this;
     }
@@ -111,6 +114,10 @@ public:
         return *this;
     }
 
+    friend std::istream& operator>>(std::istream&in, Adaptive_Int &val){
+        in >> val.value;
+        return in;
+    }
     friend std::ostream& operator<<(std::ostream&o, Adaptive_Int const&val){
         o << val.value;
         return o;
@@ -131,7 +138,7 @@ public:
         return static_cast<long double>(value);
     }
 
-    template<size_t m>
+    /*template<size_t m>
     enable_if_t<can_comp<backend_t, typename Adaptive_Int<m>::backend_t, int>::value, int> comp(Adaptive_Int<m> const&o)const{
         return value.comp(o.value);
     }
@@ -142,7 +149,15 @@ public:
     template<size_t m>
     enable_if_t<!can_comp<backend_t, typename Adaptive_Int<m>::backend_t, int>::value && !can_comp<typename Adaptive_Int<m>::backend_t, backend_t, int>::value, int> comp(Adaptive_Int<m> const&o)const{
         return (value>o.value) - (value<o.value);
+    }*/
+
+    template<typename T>
+    int comp(T const&o) const {
+        // TODO: implement
+        return comp_impl(o, is_adaptive_int<T>{});
     }
+
+
 
     template<typename SFINAE=backend_t>
     enable_if_t<is_same_v<SFINAE, backend_t> && has_sign<backend_t, int>::value, int> sign() const{
@@ -166,6 +181,31 @@ public:
     #undef DECLARE_COMPARISON_OPERATOR
 
 private:
+    template<typename T>
+    int comp_impl(T const&o, std::true_type) const {
+        return comp_impl_1(o, can_comp<backend_t, typename T::backend_t, int>{});
+    }
+    template<typename T>
+    int comp_impl_1(T const&o, std::true_type) const {
+        return value.comp(o.value);
+    }
+    template<typename T>
+    int comp_impl_1(T const&o, std::false_type) const {
+        return (value > o.value) - (value < o.value);
+    }
+    template<typename T>
+    int comp_impl(T const&o, std::false_type) const {
+        return comp_impl_2(o, can_comp<backend_t, T, int>{});
+    }
+    template<typename T>
+    int comp_impl_2(T const&o, std::true_type) const {
+        return value.comp(o);
+    }
+    template<typename T>
+    int comp_impl_2(T const&o, std::false_type) const {
+        return (value > o) - (value < o);
+    }
+
     backend_t value;
 };
 template<size_t n>

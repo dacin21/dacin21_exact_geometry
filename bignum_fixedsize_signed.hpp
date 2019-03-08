@@ -1,6 +1,3 @@
-// Released under GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007, see the LICENSE file.
-// Copyright (C) 2018 Daniel Rutschmann aka. dacin21
-
 #ifndef BIGNUM_FIXEDSIZE_SIGNED_HPP
 #define BIGNUM_FIXEDSIZE_SIGNED_HPP
 
@@ -253,14 +250,14 @@ public:
         return sign() == 1;
     }
     Bigint_Fixedsize_Signed():data{}{}
-    Bigint_Fixedsize_Signed(uint32_t const&val):data{val}{}
-    Bigint_Fixedsize_Signed(int32_t const&val):data{static_cast<uint32_t>(val)}{
+    explicit Bigint_Fixedsize_Signed(uint32_t const&val):data{val}{}
+    explicit Bigint_Fixedsize_Signed(int32_t const&val):data{static_cast<uint32_t>(val)}{
         if(val < 0) std::fill(data.begin()+1, data.end(), ~uint32_t{});
     }
     template<typename SFINAE = void, typename = enable_if_t<2 <= word_cnt, SFINAE> >
-    Bigint_Fixedsize_Signed(uint64_t const&val):data{static_cast<uint32_t>(val), static_cast<uint32_t>(val>>32)}{}
+    explicit Bigint_Fixedsize_Signed(uint64_t const&val):data{static_cast<uint32_t>(val), static_cast<uint32_t>(val>>32)}{}
     template<typename SFINAE = void, typename = enable_if_t<2 <= word_cnt, SFINAE> >
-    Bigint_Fixedsize_Signed(int64_t val):data{static_cast<uint32_t>(val), static_cast<uint32_t>(val>>32)}{
+    explicit Bigint_Fixedsize_Signed(int64_t val):data{static_cast<uint32_t>(val), static_cast<uint32_t>(static_cast<uint64_t>(val)>>32)}{
         if(val<0) std::fill(data.begin()+2, data.end(), ~uint32_t{});
     }
 #ifdef HAS_INT128
@@ -280,6 +277,10 @@ public:
         add(data, o.data);
         return *this;
     }
+    template<typename T, typename = enable_if_by_construction_t<T> >
+    Bigint_Fixedsize_Signed& operator+=(T const&o){
+        return operator+=(Bigint_Fixedsize_Signed(o));
+    }
     template<size_t other_word_cnt, typename = enable_if_t<other_word_cnt <= word_cnt> >
     Bigint_Fixedsize_Signed<word_cnt> operator+(Bigint_Fixedsize_Signed<other_word_cnt> const&o)const{
         Bigint_Fixedsize_Signed<word_cnt> ret(*this);
@@ -292,10 +293,18 @@ public:
         ret+=*this;
         return ret;
     }
+    template<typename T, typename = enable_if_by_construction_t<T> >
+    Bigint_Fixedsize_Signed& operator+(T const&o){
+        return operator+(Bigint_Fixedsize_Signed(o));
+    }
     template<size_t other_word_cnt, typename = enable_if_t<other_word_cnt <= word_cnt> >
     Bigint_Fixedsize_Signed& operator-=(Bigint_Fixedsize_Signed<other_word_cnt> const&o){
         sub(data, o.data);
         return *this;
+    }
+    template<typename T, typename = enable_if_by_construction_t<T> >
+    Bigint_Fixedsize_Signed& operator-=(T const&o){
+        return operator-=(Bigint_Fixedsize_Signed(o));
     }
     template<size_t other_word_cnt, typename = enable_if_t<other_word_cnt <= word_cnt> >
     Bigint_Fixedsize_Signed<word_cnt> operator-(Bigint_Fixedsize_Signed<other_word_cnt> const&o)const{
@@ -309,6 +318,10 @@ public:
         ret-=*this;
         ret.negate();
         return ret;
+    }
+    template<typename T, typename = enable_if_by_construction_t<T> >
+    Bigint_Fixedsize_Signed& operator-(T const&o){
+        return operator-(Bigint_Fixedsize_Signed(o));
     }
 
     template<typename T>

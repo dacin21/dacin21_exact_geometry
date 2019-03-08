@@ -1,6 +1,3 @@
-// Released under GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007, see the LICENSE file.
-// Copyright (C) 2018 Daniel Rutschmann aka. dacin21
-
 #ifndef GEOM_2D_HPP
 #define GEOM_2D_HPP
 
@@ -94,14 +91,22 @@ public:
         return ret;
     }
 
-    template<size_t m, size_t k = n+m>
+    template<size_t m>
     int comp_angular(Point<m> const&o) const {
-        return cross(o).sign();
+        return o.cross(*this).sign();
+    }
+    template<size_t m, size_t k = n+m>
+    int comp_angular_360(Point<m> const&o) const {
+        bool low = is_nonneg_angle(), o_low = o.is_nonneg_angle();
+        return low != o_low ? o_low-low : comp_angular(o);
     }
     template<size_t m>
     int comp_lexicographical(Point<m> const&o) const {
         const int c1 = x.comp(o.x);
         return c1 ? c1 : y.comp(o.y);
+    }
+    Point conj() const {
+        return Point(x, -y);
     }
 
     template<size_t m, size_t k = n+m>
@@ -116,7 +121,18 @@ public:
     bool operator==(Point<m> const&o) const {
         return x == o.x && y == o.y;
     }
+    friend std::istream& operator>>(std::istream&in, Point &p){
+        in >> p.x >> p.y;
+        return in;
+    }
+    friend std::ostream& operator<<(std::ostream&o, Point const&p){
+        return o << "(" << p.x << ", " << p.y << ")";
+    }
 private:
+    bool is_nonneg_angle() const {
+        const int A = y.comp(0);
+        return A ? A>0 : x > 0;
+    }
 };
 
 #ifdef DACIN_HASH_HPP
@@ -132,7 +148,7 @@ struct Dacin_Hash<Point<n> > {
 
 template<size_t n>
 int ccw(Point<n> const&a, Point<n> const&b, Point<n> const&c){
-    return (b-a).comp_angular(c-a);
+    return - (b-a).comp_angular(c-a);
 }
 
 
@@ -145,19 +161,20 @@ std::vector<Point<n>> convex_hull(std::vector<Point<n> > pts){
     for(size_t it=0;it<2;++it){
         const size_t old_size = hull.size();
         for(auto const&e:pts){
-            while(hull.size() > old_size+1 && ccw(hull.rbegin()[1], hull.back(), e) < 0){
+            while(hull.size() > old_size+1 && ccw(hull.rbegin()[1], hull.back(), e) <= 0){
                 hull.pop_back();
             }
             hull.push_back(e);
         }
         if(hull.size() > 1) hull.pop_back();
+        reverse(pts.begin(), pts.end());
     }
     return hull;
 }
 
 
 template<size_t n, size_t m, size_t k = std::max(n, m)+1>
-std::vector<Point<k> >minkowski_sum(std::vector<Point<n>> a, std::vector<Point<m> > b){
+std::vector<Point<k> > minkowski_sum(std::vector<Point<n>> a, std::vector<Point<m> > b){
     std::rotate(a.begin(), min_element(a.begin(), a.end(), [](Point<n> const&p1, Point<n> const&p2){return p1.comp_lexicographical(p2) < 0;}), a.end());
     std::rotate(b.begin(), min_element(b.begin(), b.end(), [](Point<m> const&p1, Point<m> const&p2){return p1.comp_lexicographical(p2) < 0;}), b.end());
     Point<k> last_dir(0, -1);
