@@ -1,3 +1,6 @@
+// Released under GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007, see the LICENSE file.
+// Copyright (C) 2018-2019 Daniel Rutschmann aka. dacin21
+
 #ifndef ADAPTIVE_INT_HPP
 #define ADAPTIVE_INT_HPP
 
@@ -138,27 +141,10 @@ public:
         return static_cast<long double>(value);
     }
 
-    /*template<size_t m>
-    enable_if_t<can_comp<backend_t, typename Adaptive_Int<m>::backend_t, int>::value, int> comp(Adaptive_Int<m> const&o)const{
-        return value.comp(o.value);
-    }
-    template<size_t m>
-    enable_if_t<!can_comp<backend_t, typename Adaptive_Int<m>::backend_t, int>::value && can_comp<typename Adaptive_Int<m>::backend_t, backend_t, int>::value, int> comp(Adaptive_Int<m> const&o)const{
-        return -o.value.comp(value);
-    }
-    template<size_t m>
-    enable_if_t<!can_comp<backend_t, typename Adaptive_Int<m>::backend_t, int>::value && !can_comp<typename Adaptive_Int<m>::backend_t, backend_t, int>::value, int> comp(Adaptive_Int<m> const&o)const{
-        return (value>o.value) - (value<o.value);
-    }*/
-
     template<typename T>
     int comp(T const&o) const {
-        // TODO: implement
         return comp_impl(o, is_adaptive_int<T>{});
     }
-
-
-
     template<typename SFINAE=backend_t>
     enable_if_t<is_same_v<SFINAE, backend_t> && has_sign<backend_t, int>::value, int> sign() const{
         return value.sign();

@@ -1,3 +1,6 @@
+// Released under GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007, see the LICENSE file.
+// Copyright (C) 2018-2019 Daniel Rutschmann aka. dacin21
+
 #ifndef GEOM_UTILITY_HPP
 #define GEOM_UTILITY_HPP
 
