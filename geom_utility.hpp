@@ -18,10 +18,16 @@ template<bool B, class T, class F>
 using conditional_t = typename std::conditional<B,T,F>::type;
 template<class T>
 using decay_t = typename std::decay<T>::type;
+template<typename T>
+constexpr T max(T const&a, T const&b){return (a < b) ? b : a;}
+template<typename T>
+constexpr T min(T const&a, T const&b){return (a > b) ? b : a;}
 #else
 using std::enable_if_t;
 using std::conditional_t;
 using std::decay_t;
+using std::max;
+using std::min;
 #endif // __cplusplus
 
 #if __cplusplus < 201703L

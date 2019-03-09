@@ -12,7 +12,7 @@ namespace dacin::geom{
 template<size_t n>
 class Adaptive_Int{
 public:
-    using backend_t = conditional_t< n <= 31, int32_t, conditional_t<n <= 63, int64_t, Bigint_Fixedsize_Signed<std::max<size_t>(1, n/32+1)> > >;
+    using backend_t = conditional_t< n <= 31, int32_t, conditional_t<n <= 63, int64_t, Bigint_Fixedsize_Signed<max<size_t>(1, n/32+1)> > >;
 
     template<typename T>
     struct is_adaptive_int : std::false_type{};
@@ -42,13 +42,13 @@ public:
     backend_t& get_value(){return value;}
     const backend_t& get_cvalue() const {return value;}
 
-    template<size_t m, size_t k = std::max(n, m)+1>
+    template<size_t m, size_t k = max(n, m)+1>
     Adaptive_Int<k> operator+(Adaptive_Int<m> const&o) const {
         Adaptive_Int<k> ret(*this);
         ret+= make_unsafe(o);
         return ret;
     }
-    template<size_t m, size_t k = std::max(n, m)+1>
+    template<size_t m, size_t k = max(n, m)+1>
     Adaptive_Int<k> operator-(Adaptive_Int<m> const&o) const {
         Adaptive_Int<k> ret(*this);
         ret-= make_unsafe(o);

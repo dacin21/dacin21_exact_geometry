@@ -33,18 +33,18 @@ private:
         }
     }
     template<typename T>
-    T convert_to_floating(){
+    T convert_to_floating() const {
         static_assert(std::is_floating_point<T>::value);
         if(is_negative()){
-            T ret = -1;
-            for(auto const&e:data){
-                ret = (ret << 32) - ~e;
+            T ret = 0;
+            for(auto it = data.rbegin(), it_end = data.rend();it!=it_end;++it){
+                ret = (ret * (1ull<< 32)) - ~*it;
             }
-            return ret;
+            return ret - 1;
         } else {
-            T ret = -1;
-            for(auto const&e:data){
-                ret = (ret << 32) + e;
+            T ret = 0;
+            for(auto it = data.rbegin(), it_end = data.rend();it!=it_end;++it){
+                ret = (ret * (1ull<< 32)) + *it;
             }
             return ret;
         }
@@ -94,7 +94,7 @@ private:
         if(pad_a != pad_b){
             return pad_a - pad_b;
         }
-        size_t j = std::max(n2, n1)-1;
+        size_t j = max(n2, n1)-1;
         for(;j>=n2;--j){
             if(a[j] != pad_b) return pad_a ? -1:1;
         }
@@ -184,7 +184,7 @@ private:
 
     template<size_t n, size_t m>
     static void mul(std::array<uint32_t, n>&out, std::array<uint32_t, n> const&a, std::array<uint32_t, m> const&b){
-        static std::array<uint32_t, n + std::max(n, m) + 1> tmp;
+        static std::array<uint32_t, n + max(n, m) + 1> tmp;
         std::fill(tmp.begin(), tmp.end(), 0);
         const uint32_t pad_b = get_pad(b);
         for(size_t i=0;i<n;++i){
@@ -290,7 +290,7 @@ public:
         ret+=o;
         return ret;
     }
-    template<size_t other_word_cnt, typename = std::enable_if_t<word_cnt < other_word_cnt> >
+    template<size_t other_word_cnt, typename = enable_if_t<word_cnt < other_word_cnt> >
     Bigint_Fixedsize_Signed<other_word_cnt> operator+(Bigint_Fixedsize_Signed<other_word_cnt> const&o)const{
         Bigint_Fixedsize_Signed<other_word_cnt> ret(o);
         ret+=*this;

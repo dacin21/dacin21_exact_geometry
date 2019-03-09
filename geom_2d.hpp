@@ -29,12 +29,12 @@ public:
         return std::make_pair(static_cast<long double>(x), static_cast<long double>(y));
     }
 
-    template<size_t m, size_t k = std::max(n, m)+1>
+    template<size_t m, size_t k = max(n, m)+1>
     Point<k> operator+(Point<m> const&o) const {
         Point<k> ret(x+o.x, y+o.y);
         return ret;
     }
-    template<size_t m, size_t k = std::max(n, m)+1>
+    template<size_t m, size_t k = max(n, m)+1>
     Point<k> operator-(Point<m> const&o) const {
         Point<k> ret(x-o.x, y-o.y);
         return ret;
@@ -95,13 +95,13 @@ public:
     }
 
     template<size_t m>
-    int comp_angular(Point<m> const&o) const {
+    int comp_angular_180(Point<m> const&o) const {
         return o.cross(*this).sign();
     }
     template<size_t m, size_t k = n+m>
     int comp_angular_360(Point<m> const&o) const {
         bool low = is_nonneg_angle(), o_low = o.is_nonneg_angle();
-        return low != o_low ? o_low-low : comp_angular(o);
+        return low != o_low ? o_low-low : comp_angular_180(o);
     }
     template<size_t m>
     int comp_lexicographical(Point<m> const&o) const {
@@ -123,6 +123,10 @@ public:
     template<size_t m>
     bool operator==(Point<m> const&o) const {
         return x == o.x && y == o.y;
+    }
+    template<size_t m>
+    bool operator!=(Point<m> const&o) const {
+        return !(operator==(o));
     }
     friend std::istream& operator>>(std::istream&in, Point &p){
         in >> p.x >> p.y;
@@ -151,7 +155,7 @@ struct Dacin_Hash<Point<n> > {
 
 template<size_t n>
 int ccw(Point<n> const&a, Point<n> const&b, Point<n> const&c){
-    return - (b-a).comp_angular(c-a);
+    return - (b-a).comp_angular_180(c-a);
 }
 
 
@@ -176,7 +180,7 @@ std::vector<Point<n>> convex_hull(std::vector<Point<n> > pts){
 }
 
 
-template<size_t n, size_t m, size_t k = std::max(n, m)+1>
+template<size_t n, size_t m, size_t k = max(n, m)+1>
 std::vector<Point<k> > minkowski_sum(std::vector<Point<n>> a, std::vector<Point<m> > b){
     std::rotate(a.begin(), min_element(a.begin(), a.end(), [](Point<n> const&p1, Point<n> const&p2){return p1.comp_lexicographical(p2) < 0;}), a.end());
     std::rotate(b.begin(), min_element(b.begin(), b.end(), [](Point<m> const&p1, Point<m> const&p2){return p1.comp_lexicographical(p2) < 0;}), b.end());
@@ -191,7 +195,7 @@ std::vector<Point<k> > minkowski_sum(std::vector<Point<n>> a, std::vector<Point<
         else {
             Point<n+1> d_a = a[i+1] - a[i];
             Point<m+1> d_b = b[j+1] - b[j];
-            if(d_a.angle_diff(last_dir).comp_angular(d_b.angle_diff(last_dir))){
+            if(d_a.angle_diff(last_dir).comp_angular_360(d_b.angle_diff(last_dir)) < 0){
                 last_dir = d_a;
                 ++i;
             } else {
@@ -199,6 +203,9 @@ std::vector<Point<k> > minkowski_sum(std::vector<Point<n>> a, std::vector<Point<
                 ++j;
             }
         }
+    }
+    if(ret.size() > 1 && ret.back() == ret.front()){
+        ret.pop_back();
     }
     return ret;
 }
