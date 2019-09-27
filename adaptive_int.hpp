@@ -12,7 +12,7 @@ namespace dacin::geom{
 template<size_t n>
 class Adaptive_Int{
 public:
-    using backend_t = conditional_t< n <= 31, int32_t, conditional_t<n <= 63, int64_t, Bigint_Fixedsize_Signed<max<size_t>(1, n/32+1)> > >;
+    using backend_t = conditional_t< n <= 31, int32_t, conditional_t<n <= 63, int64_t, conditional_t<n <= 127, int128_t, Bigint_Fixedsize_Signed<max<size_t>(1, n/64+1)> > > >;
 
     template<typename T>
     struct is_adaptive_int : std::false_type{};
@@ -27,7 +27,7 @@ public:
     template<typename S, typename T, typename SFINAE>
     struct can_comp : std::false_type{};
     template<typename S, typename T>
-    struct can_comp<S, T, decltype(declval<S>().comp(declval<T>))> : std::true_type{};
+    struct can_comp<S, T, decltype(declval<S>().comp(declval<T>()))> : std::true_type{};
 
     static Adaptive_Int ZERO;
 
@@ -126,6 +126,9 @@ public:
         return o;
     }
 
+    Adaptive_Int abs() const {
+        return sign() < 0 ? -*this : *this;
+    }
     Adaptive_Int operator-() const {
         Adaptive_Int ret(-value);
         return ret;

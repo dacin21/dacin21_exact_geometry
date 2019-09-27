@@ -17,3 +17,9 @@ Code has not been tested much yet.
 - 3D convex hull with divide and conquer
 - Segment intersection sweep-line
 - Faster multiprecision
+
+## versions
+
+- ``geom_64`` is faster, but it requries ``__int128``. 
+- ``geom_32`` does not need ``__int128``. This is useful for sites such as codeforces
+  which compile on a 32-bit system.

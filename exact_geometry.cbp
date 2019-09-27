@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="exact_geometry" />
+		<Option pch_mode="2" />
+		<Option compiler="gnu_gcc_compiler_8" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/exact_geometry" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gnu_gcc_compiler_8" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/exact_geometry" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gnu_gcc_compiler_8" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-DRELEASE" />
+				</Compiler>
+				<ResourceCompiler>
+					<Add option="RELEASE" />
+				</ResourceCompiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+			<Add option="-std=c++11" />
+		</Compiler>
+		<Unit filename="adaptive_int.hpp" />
+		<Unit filename="bignum_fixedsize_signed.hpp" />
+		<Unit filename="dacin_hash.hpp" />
+		<Unit filename="delaunay.hpp" />
+		<Unit filename="exact_geometry_all.hpp" />
+		<Unit filename="examples/codejam_2018_finals_E.cpp">
+			<Option compile="0" />
+			<Option link="0" />
+		</Unit>
+		<Unit filename="examples/opencup_2019_spb_G.cpp" />
+		<Unit filename="examples/swerc_2017_K.cpp">
+			<Option compile="0" />
+			<Option link="0" />
+		</Unit>
+		<Unit filename="geom_2d.hpp" />
+		<Unit filename="geom_utility.hpp" />
+		<Unit filename="header.h" />
+		<Unit filename="main.cpp">
+			<Option link="0" />
+		</Unit>
+		<Unit filename="svg_plot.hpp" />
+		<Unit filename="tests.hpp" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

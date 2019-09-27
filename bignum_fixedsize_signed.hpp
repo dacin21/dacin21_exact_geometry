@@ -11,7 +11,7 @@ namespace dacin::geom{
 template<size_t word_cnt, typename = enable_if_t<word_cnt != 0> >
 class Bigint_Fixedsize_Signed{
 public:
-    std::array<uint32_t, word_cnt> data;
+    std::array<uint64_t, word_cnt> data;
 
     template<typename T>
     using is_compatible_with = integral_constant<bool, is_integral_v<T> && (sizeof(T) >= 4)>;
@@ -38,32 +38,32 @@ private:
         if(is_negative()){
             T ret = 0;
             for(auto it = data.rbegin(), it_end = data.rend();it!=it_end;++it){
-                ret = (ret * (1ull<< 32)) - ~*it;
+                ret = (ret * (1ull<< 32) * (1ull<< 32)) - ~*it;
             }
             return ret - 1;
         } else {
             T ret = 0;
             for(auto it = data.rbegin(), it_end = data.rend();it!=it_end;++it){
-                ret = (ret * (1ull<< 32)) + *it;
+                ret = (ret * (1ull<< 32) * (1ull<< 32)) + *it;
             }
             return ret;
         }
     }
 
-    Bigint_Fixedsize_Signed& impl_mul_inplace(int32_t const&val, std::true_type){
-        uint32_t res = val;
+    Bigint_Fixedsize_Signed& impl_mul_inplace(int64_t const&val, std::true_type){
+        uint64_t res = val;
         if(val<0){
             negate();
             res = -res;
         }
         return operator*=(res);
     }
-    Bigint_Fixedsize_Signed& impl_mul_inplace(uint32_t const&o, std::true_type){
-        size_t carry = 0;
+    Bigint_Fixedsize_Signed& impl_mul_inplace(uint64_t const&o, std::true_type){
+        uint128_t carry = 0;
         for(auto &e:data){
-            carry+= e*static_cast<uint64_t>(o);
+            carry+= e*static_cast<uint128_t>(o);
             e = carry;
-            carry>>=32;
+            carry>>=64;
         }
         return *this;
     }
@@ -79,18 +79,19 @@ private:
     }
     template<typename T>
     Bigint_Fixedsize_Signed& impl_mul_inplace(T const&o){
-        return impl_mul_inplace(o, integral_constant<bool, is_same_v<decay_t<T>, int32_t> || is_same_v<decay_t<T>, uint32_t> >{});
+        return impl_mul_inplace(o, is_one_of<decay_t<T>, int32_t, uint32_t, int64_t, uint64_t>{});
     }
 
 
 
-    template<size_t n, typename = enable_if_t<n!=0> >
-    static uint32_t get_pad(std::array<uint32_t, n> const&a){
-        return -(a.back()>>31);
+    template<size_t n>
+    static uint64_t get_pad(std::array<uint64_t, n> const&a){
+        static_assert(n != 0);
+        return -(a.back()>>63);
     }
     template<size_t n1, size_t n2>
-    static int signed_comp(std::array<uint32_t, n1> const&a, std::array<uint32_t, n2> const&b){
-        const uint32_t pad_a = get_pad(a), pad_b = get_pad(b);
+    static int signed_comp(std::array<uint64_t, n1> const&a, std::array<uint64_t, n2> const&b){
+        const uint64_t pad_a = get_pad(a), pad_b = get_pad(b);
         if(pad_a != pad_b){
             return pad_a - pad_b;
         }
@@ -108,46 +109,46 @@ private:
     }
 
     template<size_t n1, size_t n2, typename = enable_if_t<n2 <= n1> >
-    static void add(std::array<uint32_t, n1> &a, std::array<uint32_t, n2> const&b){
-        uint64_t carry = 0;
+    static void add(std::array<uint64_t, n1> &a, std::array<uint64_t, n2> const&b){
+        uint128_t carry = 0;
         for(size_t i=0;i<n2;++i){
             carry += a[i];
             carry += b[i];
             a[i] = carry;
-            carry >>=32;
+            carry >>=64;
         }
-        const uint32_t pad_b = get_pad(b);
+        const uint64_t pad_b = get_pad(b);
         for(size_t i=n2;i<n1;++i){
             carry += a[i];
             carry += pad_b;
             a[i] = carry;
-            carry>>=32;
+            carry>>=64;
         }
     }
     template<size_t n1, size_t n2, typename = enable_if_t<n2 <= n1> >
-    static void sub(std::array<uint32_t, n1> &a, std::array<uint32_t, n2> const&b){
-        uint64_t carry = 0;
+    static void sub(std::array<uint64_t, n1> &a, std::array<uint64_t, n2> const&b){
+        uint128_t carry = 0;
         for(size_t i=0;i<n2;++i){
             carry += a[i];
             carry -= b[i];
             a[i] = carry;
-            carry >>=32;
-            if(carry>>31) carry|=~0ull<<32;
+            carry >>=64;
+            if(carry>>63) carry|=~uint128_t{0}<<64;
         }
         for(size_t i=n2;i<n1;++i){
             carry+=a[i];
             a[i] = carry;
-            carry>>=32;
-            if(carry>>31) carry|=~0ull<<32;
+            carry>>=64;
+            if(carry>>63) carry|=~uint128_t{0}<<64;
         }
     }
 
     template<size_t n>
-    static void right_shift_small(std::array<uint32_t, n> &a, size_t const&c){
+    static void right_shift_small(std::array<uint64_t, n> &a, size_t const&c){
         if(!c) return;
-        uint32_t carry = get_pad(a), tmp;
+        uint64_t carry = get_pad(a), tmp;
         for(size_t i=n-1;i+1;--i){
-            carry<<=32-c;
+            carry<<=64-c;
             tmp = a[i];
             a[i]>>=c;
             a[i]|=carry;
@@ -155,18 +156,18 @@ private:
         }
     }
     template<size_t n>
-    static void right_shift(std::array<uint32_t, n> &a, size_t c){
-        right_shift_small(a, c%32);
-        c/=32;
+    static void right_shift(std::array<uint64_t, n> &a, size_t c){
+        right_shift_small(a, c%64);
+        c/=64;
         copy(a.begin()+c, a.end(), a.begin());
         fill(a.end()-c, a.end(), 0);
     }
     template<size_t n>
-    static void left_shift_small(std::array<uint32_t, n> &a, size_t const&c){
+    static void left_shift_small(std::array<uint64_t, n> &a, size_t const&c){
         if(!c) return;
-        uint32_t carry = 0, tmp;
+        uint64_t carry = 0, tmp;
         for(size_t i=0;i<n;--i){
-            carry>>=32-c;
+            carry>>=64-c;
             tmp = a[i];
             a[i]<<=c;
             a[i]|=carry;
@@ -174,33 +175,33 @@ private:
         }
     }
     template<size_t n>
-    static void left_shift(std::array<uint32_t, n> &a, size_t c){
-        left_shift_small(a, c%32);
-        c/=32;
-        const uint32_t pad = get_pad(a);
+    static void left_shift(std::array<uint64_t, n> &a, size_t c){
+        left_shift_small(a, c%64);
+        c/=64;
+        const uint64_t pad = get_pad(a);
         copy(a.begin(), a.end()-c, a.begin()+c);
         fill(a.begin(), a.begin()+c, pad);
     }
 
     template<size_t n, size_t m>
-    static void mul(std::array<uint32_t, n>&out, std::array<uint32_t, n> const&a, std::array<uint32_t, m> const&b){
-        static std::array<uint32_t, n + max(n, m) + 1> tmp;
+    static void mul(std::array<uint64_t, n>&out, std::array<uint64_t, n> const&a, std::array<uint64_t, m> const&b){
+        static std::array<uint64_t, n + max(n, m) + 1> tmp;
         std::fill(tmp.begin(), tmp.end(), 0);
-        const uint32_t pad_b = get_pad(b);
+        const uint64_t pad_b = get_pad(b);
         for(size_t i=0;i<n;++i){
-            uint64_t carry = 0;
+            uint128_t carry = 0;
             for(size_t j=0;j<m;++j){
-                carry+=a[i] * static_cast<uint64_t>(b[j]);
+                carry+=a[i] * static_cast<uint128_t>(b[j]);
                 carry+=tmp[i+j];
                 tmp[i+j] = carry;
-                carry>>=32;
+                carry>>=64;
             }
             if(m<n && pad_b){
                 for(size_t j=m;j<n;++j){
-                    carry+=a[i] * static_cast<uint64_t>(pad_b);
+                    carry+=a[i] * static_cast<uint128_t>(pad_b);
                     carry+=tmp[i+j];
                     tmp[i+j] = carry;
-                    carry>>=32;
+                    carry>>=64;
                 }
                 tmp[i+n] = carry;
             } else {
@@ -209,16 +210,16 @@ private:
         }
         std::copy(tmp.begin(), tmp.begin()+n, out.begin());
     }
-    static uint32_t divmod(Bigint_Fixedsize_Signed &a, uint32_t const&d){
+    static uint64_t divmod(Bigint_Fixedsize_Signed &a, uint64_t const&d){
         bool nega = false;
         if(a.is_negative()){
             a.negate();
             nega = true;
         }
         assert(d != 0);
-        uint64_t carry = 0;
+        uint128_t carry = 0;
         for(size_t i = word_cnt-1;i+1;--i){
-            carry<<=32;
+            carry<<=64;
             carry += a.data[i];
             a.data[i] = carry / d;
             carry = carry % d;
@@ -242,7 +243,7 @@ private:
 
 public:
     bool is_negative()const{
-        return data.back()>>31;
+        return data.back()>>63;
     }
     int sign() const{
         if(is_negative()) return -1;
@@ -255,24 +256,23 @@ public:
     Bigint_Fixedsize_Signed():data{}{}
     explicit Bigint_Fixedsize_Signed(uint32_t const&val):data{val}{}
     explicit Bigint_Fixedsize_Signed(int32_t const&val):data{static_cast<uint32_t>(val)}{
-        if(val < 0) std::fill(data.begin()+1, data.end(), ~uint32_t{});
+        if(val < 0) {
+            data[0] |= ~uint64_t{}<<32;
+            std::fill(data.begin()+1, data.end(), ~uint64_t{});
+        }
     }
-    template<typename SFINAE = void, typename = enable_if_t<2 <= word_cnt, SFINAE> >
-    explicit Bigint_Fixedsize_Signed(uint64_t const&val):data{static_cast<uint32_t>(val), static_cast<uint32_t>(val>>32)}{}
-    template<typename SFINAE = void, typename = enable_if_t<2 <= word_cnt, SFINAE> >
-    explicit Bigint_Fixedsize_Signed(int64_t val):data{static_cast<uint32_t>(val), static_cast<uint32_t>(static_cast<uint64_t>(val)>>32)}{
-        if(val<0) std::fill(data.begin()+2, data.end(), ~uint32_t{});
+    explicit Bigint_Fixedsize_Signed(uint64_t const&val):data{val}{}
+    explicit Bigint_Fixedsize_Signed(int64_t val):data{static_cast<uint64_t>(val)}{
+        if(val<0) std::fill(data.begin()+1, data.end(), ~uint64_t{});
     }
-#ifdef HAS_INT128
-    template<typename SFINAE = void, typename = enable_if_t<4 <= word_cnt, SFINAE> >
-    Bigint_Fixedsize_Signed(__int128 val):data{static_cast<uint32_t>(val), static_cast<uint32_t>(val>>32), static_cast<uint32_t>(val>>64), static_cast<uint32_t>(val>>96)}{
-        if(val<0) std::fill(data.begin()+4, data.end(), ~uint32_t{});
+    explicit Bigint_Fixedsize_Signed(__int128 val):data{static_cast<uint64_t>(val), static_cast<uint64_t>(val>>64)}{
+        static_assert(word_cnt >= 2);
+        if(val<0) std::fill(data.begin()+2, data.end(), ~uint64_t{});
     }
-#endif
     template<size_t other_word_cnt, typename = enable_if_t<other_word_cnt <= word_cnt> >
     explicit Bigint_Fixedsize_Signed(Bigint_Fixedsize_Signed<other_word_cnt> const&val):data{}{
         std::copy(val.data.begin(), val.data.end(), data.begin());
-        if(val.is_negative()) std::fill(data.begin()+other_word_cnt, data.end(), ~uint32_t{});
+        if(val.is_negative()) std::fill(data.begin()+other_word_cnt, data.end(), ~uint64_t{});
     }
 
     template<size_t other_word_cnt, typename = enable_if_t<other_word_cnt <= word_cnt> >
@@ -345,17 +345,17 @@ public:
         return *this;
     }
 
-    Bigint_Fixedsize_Signed operator*(uint32_t const&val)const{
+    Bigint_Fixedsize_Signed operator*(uint64_t const&val)const{
         Bigint_Fixedsize_Signed ret(*this);
         ret*=val;
         return ret;
     }
-    Bigint_Fixedsize_Signed operator*(int32_t const&val)const{
+    Bigint_Fixedsize_Signed operator*(int64_t const&val)const{
         Bigint_Fixedsize_Signed ret(*this);
         ret*=val;
         return ret;
     }
-    template<typename T, typename = enable_if_by_construction_t<T>, typename = enable_if_t<!is_same_v<decay_t<T>, int32_t> && !is_same_v<decay_t<T>, uint32_t> > >
+    template<typename T, typename = enable_if_by_construction_t<T>, typename = enable_if_t<!is_one_of<decay_t<T>, int32_t, uint32_t, int64_t, uint64_t>::value> >
     Bigint_Fixedsize_Signed operator*(T const& val)const{
         return operator*(Bigint_Fixedsize_Signed(val));
     }
@@ -434,7 +434,7 @@ public:
 
     static void print_bin(std::ostream&o, Bigint_Fixedsize_Signed val){
         for(auto it = val.data.rbegin(); it != val.data.rend();++it){
-            o << std::bitset<32>(*it);
+            o << std::bitset<64>(*it);
         }
     }
     friend std::ostream& operator<<(std::ostream&o, Bigint_Fixedsize_Signed val){
@@ -487,11 +487,24 @@ public:
 #ifdef DACIN_HASH_HPP
 template<size_t word_cnt>
 struct Dacin_Hash<Bigint_Fixedsize_Signed<word_cnt>>{
-    size_t operator()(Bigint_Fixedsize_Signed<word_cnt> const&val) const {
+    size_t old_hash(std::vector<uint32_t> const&data) const {
         size_t ret = SALT;
-        const uint32_t pad = val.data.back();
-        int i = val.data.size()-1;
+        const uint32_t pad = data.back();
+        int i = data.size()-1;
         if(pad == 0 || pad == ~0u){
+            while(i>0 && data[i] == pad) --i;
+        }
+        if(pad != 0 && i+1 < (int)data.size()) ++i;
+        for(size_t j=0, lim=i+1;j<lim;++j){
+            ret = splitmix64(data[i] + ret);
+        }
+        return ret;
+    }
+    size_t new_hash(Bigint_Fixedsize_Signed<word_cnt> const&val) const {
+        size_t ret = SALT;
+        const uint64_t pad = val.data.back();
+        int i = val.data.size()-1;
+        if(pad == 0 || pad == ~0ull){
             while(i>0 && val.data[i] == pad) --i;
         }
         if(pad != 0 && i+1 < (int)val.data.size()) ++i;
@@ -499,6 +512,14 @@ struct Dacin_Hash<Bigint_Fixedsize_Signed<word_cnt>>{
             ret = splitmix64(val.data[i] + ret);
         }
         return ret;
+    }
+    size_t operator() (Bigint_Fixedsize_Signed<word_cnt> const&val) const {
+        std::vector<uint32_t> data(2*val.data.size());
+        for(int i=0;i<(int)val.data.size();++i){
+            data[2*i] = val.data[i];
+            data[2*i+1] = val.data[i]>>32;
+        }
+        return old_hash(data);
     }
 };
 #endif // DACIN_HASH_HPP

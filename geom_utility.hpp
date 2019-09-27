@@ -4,6 +4,15 @@
 #ifndef GEOM_UTILITY_HPP
 #define GEOM_UTILITY_HPP
 
+#ifdef RELEASE
+#undef _GLIBCXX_DEBUG
+#endif // RELEASE
+
+
+#ifndef __SIZEOF_INT128__
+static_assert(false, "__int128 not found");
+#endif // __SIZEOF_INT128__
+
 #include <bits/stdc++.h>
 
 namespace dacin::geom{
@@ -59,6 +68,28 @@ struct Unsafe_Wrapper {
 template<typename T>
 Unsafe_Wrapper<T const&> make_unsafe(T const& val) {
     return Unsafe_Wrapper<T const&>(val);
+}
+
+template<typename S, typename... Types>
+struct is_one_of : std::false_type{};
+template<typename S, typename T, typename... Types>
+struct is_one_of<S, T, Types...> : std::integral_constant<bool, is_same_v<S, T> || is_one_of<S, Types...>::value> {};
+
+using uint128_t = unsigned __int128;
+using int128_t = __int128;
+
+std::ostream& operator<<(std::ostream&o, uint128_t x){
+    if(x < 10){
+        return o << x;
+    } else {
+        return o << x/10 << (int)x%10;
+    }
+}
+std::ostream& operator<<(std::ostream&o, int128_t x){
+    if(x < 0){
+        return o << '-' << -(uint128_t)x;
+    }
+    return o << (uint128_t)x;
 }
 
 } // namespace dacin::geom

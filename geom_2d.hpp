@@ -29,6 +29,9 @@ public:
         return std::make_pair(static_cast<long double>(x), static_cast<long double>(y));
     }
 
+    Point operator-() const {
+        return Point(-x, -y);
+    }
     template<size_t m, size_t k = max(n, m)+1>
     Point<k> operator+(Point<m> const&o) const {
         Point<k> ret(x+o.x, y+o.y);
@@ -111,6 +114,12 @@ public:
     Point conj() const {
         return Point(x, -y);
     }
+    Point ccw90() const {
+        return Point(-y, x);
+    }
+    Point ccw270() const {
+        return -ccw90();
+    }
 
     template<size_t m, size_t k = n+m>
     Point<k> angle_sum(Point<m> const&o) const {
@@ -128,6 +137,9 @@ public:
     bool operator!=(Point<m> const&o) const {
         return !(operator==(o));
     }
+    bool operator!() const {
+        return !x && !y;
+    }
     friend std::istream& operator>>(std::istream&in, Point &p){
         in >> p.x >> p.y;
         return in;
@@ -141,6 +153,11 @@ private:
         return A ? A>0 : x > 0;
     }
 };
+
+template<size_t n, size_t m, size_t k>
+int comp_angular_based(Point<n> const&a, Point<m> const&b, Point<k> const&base){
+    return a.angle_diff(base).comp_angular(b.angle_diff(base));
+}
 
 #ifdef DACIN_HASH_HPP
 template<size_t n>

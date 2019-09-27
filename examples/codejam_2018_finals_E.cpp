@@ -1,7 +1,7 @@
 // https://codejam.withgoogle.com/2018/challenges/0000000000007766/dashboard/
 // Problem E: 'The Cartesian Job'
 
-#include "exact_geometry_all.hpp"
+#include "../exact_geometry_all.hpp"
 
 #include <bits/stdc++.h>
 using namespace std;
