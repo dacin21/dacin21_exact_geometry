@@ -7,6 +7,7 @@ Code has not been tested much yet.
 ## Features
 
 - Compile time fixed size multiprecision
+- 2D geometry stuff with point and angles.
 - 2D convex hull, Minkowski sum of convex polygons
 - 2D randomized incremental Delaunay triangulation
 - Plotting stuff to .svg
@@ -20,6 +21,4 @@ Code has not been tested much yet.
 
 ## versions
 
-- ``geom_64`` is faster, but it requries ``__int128``. 
-- ``geom_32`` does not need ``__int128``. This is useful for sites such as codeforces
-  which compile on a 32-bit system.
+- The branch `with_int128` requires `__int128`, so it won't work on sites such as codeforces.
